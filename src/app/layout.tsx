@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono, Roboto } from "next/font/google";
+import { Roboto } from "next/font/google";
+import '@/styles/sass/bootstrap.scss'
 
 const roboto = Roboto({
   weight: ['400', '700'],
