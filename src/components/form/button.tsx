@@ -1,20 +1,20 @@
-import React from 'react';
+import React from "react";
 
 interface ButtonProps {
   children: React.ReactNode;
   outline?: boolean;
   variant?:
-    | 'primary'
-    | 'secondary'
-    | 'success'
-    | 'danger'
-    | 'warning'
-    | 'dark'
-    | 'dorado'
-    | 'azul'
-    | 'light'
-    | 'link';
-  type?: 'button' | 'submit' | 'reset';
+    | "primary"
+    | "secondary"
+    | "success"
+    | "danger"
+    | "warning"
+    | "dark"
+    | "dorado"
+    | "azul"
+    | "light"
+    | "link";
+  type?: "button" | "submit" | "reset";
   icon?: React.ReactNode;
   className?: {
     button?: string;
@@ -22,31 +22,33 @@ interface ButtonProps {
   };
   disabled?: boolean;
   onClick?: (event: React.MouseEvent<HTMLButtonElement, MouseEvent>) => void;
-  size?: 'sm' | 'lg';
+  size?: "sm" | "lg";
+  style?: React.CSSProperties;
 }
 
 const Button = ({
   children,
-  type = 'button',
+  type = "button",
   icon,
   className,
-  variant = 'primary',
+  variant = "primary",
   outline = false,
   disabled = false,
   onClick,
   size,
+  style,
 }: ButtonProps) => {
   const btnVariant = outline ? `btn-outline-${variant}` : `btn-${variant}`;
   return (
     <button
       style={{
-        zIndex: 100,
+        ...style,
       }}
       type={type}
       className={`
                 btn 
                 ${btnVariant}
-                ${size ? `btn-${size}` : ''}
+                ${size ? `btn-${size}` : ""}
                 ${className?.button}
                 `}
       disabled={disabled}
