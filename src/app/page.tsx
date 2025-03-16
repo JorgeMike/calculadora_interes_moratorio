@@ -1,32 +1,29 @@
 "use client";
 import React, { useEffect, useState } from "react";
-import Papa from "papaparse";
-import Hero from "@/components/hero";
-import dayjs from "dayjs";
+import Input from "@/components/form/input";
+import Button from "@/components/form/button";
+import { findValueByDate } from "@/utils/read-csv";
+import { addMonths, format, parseISO } from "date-fns";
+import { es } from "date-fns/locale";
 
 export default function Page() {
-  const [data, setData] = useState<{ fecha: string; valor: string }[]>([]);
   const [initialValue, setInitialValue] = useState("");
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
-  const [interest, setInterest] = useState<number | null>(null);
   const [startUDIValue, setStartUDIValue] = useState<string | null>(null);
   const [endUDIValue, setEndUDIValue] = useState<string | null>(null);
-  const [debtInUDIs, setDebtInUDIs] = useState<number | null>(null);
-
-  useEffect(() => {
-    fetch("/udis.csv")
-      .then((response) => response.text())
-      .then((csvText) => {
-        Papa.parse(csvText, {
-          header: true,
-          skipEmptyLines: true,
-          complete: (result) => {
-            setData(result.data as { fecha: string; valor: string }[]);
-          },
-        });
-      });
-  }, []);
+  const [months, setMonths] = useState<string[]>([]);
+  const [results, setResults] = useState<{
+    mes: string;
+    ccpudis: string;
+    ccp125: string;
+    diasAnio: string;
+    factorDia: string;
+    diasMes: string;
+    interesMoratorio: string;
+    interesMensual: string;
+    interesPesos: string;
+  }[]>([]);
 
   const calculateInterest = () => {
     if (!initialValue || !startDate || !endDate) {
@@ -34,101 +31,148 @@ export default function Page() {
       return;
     }
 
-    const daysPast = dayjs(endDate).diff(dayjs(startDate), "day");
-    if (daysPast <= 0) {
-      alert("La fecha final debe ser posterior a la inicial");
-      return;
-    }
 
-    const startUDI = data.find((entry) => entry.fecha === startDate.split("-").reverse().join("/"))?.valor;
-    const endUDI = data.find((entry) => entry.fecha === endDate.split("-").reverse().join("/"))?.valor;
+  };
 
-    if (!startUDI || !endUDI) {
-      alert("No se encontraron valores UDI para las fechas seleccionadas");
-      return;
-    }
+  const handleOnSelectStart = async (
+    e: React.ChangeEvent<HTMLInputElement>
+  ) => {
+    const date = e.target.value;
+    setStartDate(date);
+    const resultado = await findValueByDate(date);
+    setStartUDIValue(resultado);
+  };
 
-    setStartUDIValue(startUDI);
-    setEndUDIValue(endUDI);
-
-    const debtUDIs = parseFloat(initialValue) / parseFloat(startUDI);
-    setDebtInUDIs(debtUDIs);
-
-    const interestRate = 10; 
-    const moratoryInterest = debtUDIs * (1.25 * (interestRate / 100)) * (daysPast / 365);
-
-    setInterest(moratoryInterest * parseFloat(endUDI));
+  const handleOnSelectEnd = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const date = e.target.value;
+    setEndDate(date);
+    const resultado = await findValueByDate(date);
+    setEndUDIValue(resultado);
   };
 
   return (
-    <div style={{ minHeight: "100vh", display: "flex", flexDirection: "column" }}>
-      <Hero />
-      <div className="d-flex flex-column flex-grow-1 justify-content-center align-items-center">
+    <>
+      <div className="page-header">
         <div className="container">
-          <div className="row flex-grow-1 m-auto">
-            <div className="col-md-4">
-              <div className="mb-3">
-                <label htmlFor="inputValue" className="form-label">
-                  Valor Inicial de la Deuda (MXN)
-                </label>
-                <input
-                  type="number"
-                  className="form-control"
-                  id="inputValue"
-                  placeholder="Ingrese un valor"
-                  value={initialValue}
-                  onChange={(e) => setInitialValue(e.target.value)}
-                />
-              </div>
-            </div>
-            <div className="col-md-4">
-              <div className="mb-3">
-                <label htmlFor="inputDateStart" className="form-label">
-                  Fecha Inicial
-                </label>
-                <input
-                  type="date"
-                  className="form-control"
-                  id="inputDateStart"
-                  value={startDate}
-                  onChange={(e) => setStartDate(e.target.value)}
-                />
-              </div>
-            </div>
-            <div className="col-md-4">
-              <div className="mb-3">
-                <label htmlFor="inputDateEnd" className="form-label">
-                  Fecha Final
-                </label>
-                <input
-                  type="date"
-                  className="form-control"
-                  id="inputDateEnd"
-                  value={endDate}
-                  onChange={(e) => setEndDate(e.target.value)}
-                />
+          <div className="row">
+            <div className="col-xl-12 col-lg-12 col-md-12 col-sm-12 col-12">
+              <div className="page-caption">
+                <h1 className="page-title">Calculadora de Interés Moratorio</h1>
               </div>
             </div>
           </div>
-          <div className="text-center mt-3">
-            <button className="btn btn-primary" onClick={calculateInterest}>
-              Calcular Interés Moratorio
-            </button>
-          </div>
-          {startUDIValue && endUDIValue && (
-            <div className="mt-3 text-center">
-              <h5>Valor UDI en Fecha Inicial: {startUDIValue} MXN</h5>
-              <h5>Valor UDI en Fecha Final: {endUDIValue} MXN</h5>
-              <h5>Deuda en UDIs: {debtInUDIs?.toFixed(2)}</h5>
-            </div>
-          )}
-          {interest !== null && (
-            <div className="mt-3 text-center">
-              <h4>Interés Moratorio: ${interest.toFixed(2)} MXN</h4>
-            </div>
-          )}
         </div>
       </div>
-    </div>
+      <div className="card-section bg">
+        <div className="container">
+          <div className="card-block bg-white shadow-sm">
+            <div className="row">
+              <div className="col-12">
+                <div className="d-flex justify-content-center mb-3">
+                  <Input
+                    label="Monto de la deuda original"
+                    onChange={(e) => setInitialValue(e.target.value)}
+                    type="number"
+                    style={{ minWidth: "400px" }}
+                    className={{ input: "fs-4" }}
+                  />
+                </div>
+              </div>
+              <div className="col-md-6">
+                <div className="mb-0">
+                  <label htmlFor="inputDateStart" className="form-label">
+                    Fecha Inicial
+                  </label>
+                  <input
+                    type="date"
+                    className="form-control"
+                    id="inputDateStart"
+                    value={startDate}
+                    onChange={handleOnSelectStart}
+                  />
+                </div>
+              </div>
+              <div className="col-md-6">
+                <div className="mb-0">
+                  <label htmlFor="inputDateEnd" className="form-label">
+                    Fecha Final
+                  </label>
+                  <input
+                    type="date"
+                    className="form-control"
+                    id="inputDateEnd"
+                    value={endDate}
+                    onChange={handleOnSelectEnd}
+                  />
+                </div>
+              </div>
+              <div className="col-12">
+                <div className="d-flex justify-content-center mt-3">
+                  <Button onClick={calculateInterest}>
+                    Calcular Interés Moratorio
+                  </Button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div className="container">
+        {startUDIValue && endUDIValue && initialValue && (
+          <div className="row">
+            <div className="col-md-4 text-start">
+              <small>Valor Inicial</small>
+              <h3>{initialValue} MXN</h3>
+            </div>
+            <div className="col-md-4 text-center">
+              <small>Valor UDI en Fecha Inicial</small>
+              <h3>{startUDIValue} MXN</h3>
+            </div>
+            <div className="col-md-4 text-end">
+              <small>Valor UDI en Fecha Final</small>
+              <h3>{endUDIValue} MXN</h3>
+            </div>
+          </div>
+        )}
+        <table className="table table-bordered mt-3">
+          <thead>
+            <tr>
+              <th scope="col">Mes</th>
+              <th scope="col">CCP-Udis</th>
+              <th scope="col">CCP * 1.25</th>
+              <th scope="col">/</th>
+              <th scope="col">Días del Año</th>
+              <th scope="col">=</th>
+              <th scope="col">Factor por Día</th>
+              <th scope="col">*</th>
+              <th scope="col">Días del Mes</th>
+              <th scope="col">=</th>
+              <th scope="col">Interés Moratorio en Udis</th>
+              <th scope="col">Interés Mensual en Udis</th>
+              <th scope="col">Interés Mensual en Pesos</th>
+            </tr>
+          </thead>
+          <tbody>
+            {months.map((month, index) => (
+              <tr key={index}>
+                <td>{month}</td>
+                <td>-</td>
+                <td>-</td>
+                <td>/</td>
+                <td>-</td>
+                <td>=</td>
+                <td>-</td>
+                <td>*</td>
+                <td>-</td>
+                <td>=</td>
+                <td>-</td>
+                <td>-</td>
+                <td>-</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </>
   );
 }
